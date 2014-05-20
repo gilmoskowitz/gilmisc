@@ -1,0 +1,82 @@
+
+:
+PROGNAME=`basename $0`
+TMPFILE=${TMPDIR:-/tmp}/$PROGNAME.$$
+
+NUMBERING=-n
+PAGES=${PAGES:-2}
+PRINTER=${PRINTER:-lp6}
+TABWIDTH=8
+
+USAGE="$PROGNAME [ -h ] [ -{e|t} tab-width ] file [ ... ]"
+
+case `uname -s` in
+	SunOS)
+		EXPAND=expand
+		#EXPANDFLAG=-t
+		EXPANDFLAG=-
+		;;
+	HP-UX|*)
+		EXPAND="pr -t"
+		EXPANDFLAG=-e
+		;;
+esac
+
+if set -- `getopt he:t:N $*` ; then
+	true
+else
+	echo $USAGE
+	exit 1
+fi
+
+while [ $1 != -- ] ; do
+	case $1 in
+		-h)	echo $USAGE
+			echo
+			echo "	-h	get this help"
+			echo "	-e	expand tabs to tab-width spaces (default = 8)"
+			echo "	-t	same as -e"
+			echo "	-N	don't number the output"
+			exit 1
+			;;
+		-e|-t)
+			TABWIDTH=$2
+			shift 2
+			;;
+		-N)
+			NUMBERING=""
+			shift
+			;;
+		*)	echo $PROGNAME: $1 is not a known option
+			exit 1
+			;;
+	esac
+done
+if [ $1 = -- ] ; then
+	shift
+fi
+
+if [ $# -eq 0 ] ; then
+    cat > $TMPFILE
+    FILELIST=$TMPFILE
+else
+    FILELIST="$*"
+fi
+
+for FILE in $FILELIST ; do
+    if [ ! -f "$FILE" ] ; then
+	echo $0: $FILE not found
+    else
+	WIDTH=`expr \`longest -e $TABWIDTH $FILE | cut -f2 -d: | cut -f1 -d\	\` + 8`
+	if [ $WIDTH -lt 70 ] ; then
+	    WIDTH=70
+	elif [ $WIDTH -gt 132 ] ; then
+	    PAGES=1
+	fi
+	cat $NUMBERING $FILE | $EXPAND ${EXPANDFLAG}$TABWIDTH | \
+		mpage -p -h$FILE -$PAGES -W$WIDTH -P | lpr -P$PRINTER
+#		mpage -p -h$FILE -$PAGES -W$WIDTH -P | psmod -duplex=off | lpr -P$PRINTER
+    fi
+done
+
+exit 0

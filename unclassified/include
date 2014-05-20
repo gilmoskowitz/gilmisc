@@ -1,0 +1,213 @@
+
+nawk '
+BEGIN {
+    incl_idx = 0
+    incl_dirs[incl_idx] = "."
+    numbering = 0
+    debugging = 0
+    stack_ht = 0
+    indenting = 0
+
+    cur_file_type = "c"
+    cur_lang = "C"
+
+    incl_expr["C"] = "^[ 	]*#[ 	]include"
+    incl_expr["C++"] = "^[ 	]*#[ 	]include"
+    incl_expr["hydra"] = "^[ 	]*HYDRAINCLUDE"
+
+    com_beg_str["C"] = "/* "	; com_end_str["C"]= " */"
+    com_beg_str["C++"] = "// "	; com_end_str["C++"] = ""
+    com_beg_str["hydra"] = "// "	; com_end_str["hydra"] = ""
+
+    for (cur_arg = 0; cur_arg < ARGC; cur_arg++)
+	{
+	if (debugging) print "processing " ARGV[cur_arg]
+	if (ARGV[cur_arg] ~ /^-h/)
+	    {
+	    usage();
+	    exit
+	    }
+
+	else if (ARGV[cur_arg] ~ /^-I/)
+	    {
+	    incl_idx++
+	    incl_dirs[incl_idx] =substr(ARGV[cur_arg], 3, length(ARGV[cur_arg]))
+	    }
+
+	else if (ARGV[cur_arg] ~ /^-n/)
+	    {
+	    if (debugging) print "setting numbering"
+	    numbering = 1
+	    }
+
+	else if (ARGV[cur_arg] ~ /^-D/)
+	    {
+	    if (debugging) print "setting debugging"
+	    debugging = 1
+	    }
+
+	else if (ARGV[cur_arg] ~ /^-i/)
+	    {
+	    if (debugging) print "setting indenting"
+	    indenting = 1
+	    }
+
+	else if (ARGV[cur_arg] ~ /^-/)
+	    {
+	    print ARGV[cur_arg] " not recognized"
+	    usage();
+	    exit
+	    }
+
+	else if (ARGV[cur_arg] ~ /[^.]awk/)
+	    ;
+
+	else if (ARGV[cur_arg] ~ /\=/)
+	    {
+	    split(ARGV[cur_arg], cur_env, "=")
+	    env[cur_env[1]] = cur_env[2]
+	    }
+
+	else
+	    push_stack(ARGV[cur_arg])
+	}
+
+    if (debugging) for (env_val in env) print env_val, env[env_val]
+
+    while (stack_ht > 0)
+	{
+	status = getline <inputfile
+	if (debugging) print "status = " status
+
+	if (status <= 0)
+	    pop_stack()
+
+	else if ($0 ~ incl_expr[cur_lang])
+	    {
+	    if (numbering) printf("%s:\t", inputfile, NR)
+	    print com_beg_str[cur_lang]  $0  com_end_str[cur_lang]
+	    tmpfilename = build_filename($2)
+	    if (tmpfilename != "")
+		{
+		status = 1
+		if (numbering) printf("%s:\t", inputfile, NR)
+		print
+		}
+	    }
+
+	else	# print the actual line
+	    {
+	    if (numbering) printf("%s:\t", inputfile, NR)
+	    if (indenting) printf("%s", current_indent)
+	    print
+	    }
+	}
+    if (debugging) print status ", " stack_ht " ============"
+    }
+
+function push_stack(filename,	i, num_parts, file_parts) {
+    # if already in the stack, do not add it again
+    for (i = 2; i < stack_ht && filename != stack[i]; i++)
+	if (debugging) print filename " != " stack[i] " for i = " i;
+
+    if (i < stack_ht)
+	{
+	print
+	print com_beg_str[cur_lang] filename " already included ============ " com_end_str[cur_lang]
+	return
+	}
+
+    stack_ht++
+    stack[stack_ht] = filename
+    inputfile = filename
+
+    num_parts = split(filename, file_parts, ".")
+    cur_file_type = file_parts[num_parts]
+    if (cur_file_type == "c"	||	cur_file_type == "h")
+	cur_lang = "C"
+    else if (cur_file_type == "c++"	|| cur_file_type == "c++")
+	cur_lang = "C++"
+    else if (cur_file_type == "conf"	|| cur_file_type == "inc")
+	cur_lang = "hydra"
+	
+    if (debugging)
+	print "current file is of type " cur_file_type " and language " cur_lang
+
+    current_indent = current_indent "\t"
+    if (debugging)
+	{
+	print "current stack has height " stack_ht ":"
+	for (i = stack_ht; i >= 1; i--)
+	    print "\t" stack[i]
+	}
+}
+
+function pop_stack() {
+    close(stack[stack_ht])
+    stack_ht--
+    inputfile = stack[stack_ht]
+    current_indent = substr(current_indent, 1, length(current_indent) - 1)
+    if (debugging)
+	{
+	print "current stack:"
+	for (i = stack_ht; i >= 1; i--)
+	    print "\t" stack[i]
+	}
+}
+
+function build_filename(filename,	tmpfile, status, cur_env) {
+    if (debugging) print "entering build_filename with " filename
+
+    if (cur_lang == "C"	|| cur_lang == "C++")
+	{
+	if (filename ~ /^<.*>/)
+	    {
+	    if (debugging) print "found < > file"
+	    tmpfile = "/usr/include/" substr(filename, 2, length(filename) - 2)
+	    }
+
+	else if (filename ~ /^".*"/)
+	    {
+	    if (debugging) print "found quoted file"
+	    filename = substr(filename, 2, length(filename) - 2)
+
+	    for (i = 0; i <= incl_idx; i++)
+		{
+		tmpfile = incl_dirs[i] "/" filename
+		}
+	    }
+	}
+    else if (cur_lang == "hydra")
+	{
+	for (cur_env in env)
+	    {
+	    if (debugging) print "trying " cur_env " replacement"
+	    tmpfile = filename
+	    num_subs = sub("\\\$" cur_env, env[cur_env], tmpfile)
+	    if (index(tmpfile, ";") == length(tmpfile))
+		tmpfile = substr(tmpfile, 1, length(tmpfile) - 1)
+	    if (debugging) print "tmpfile after " cur_env " replacement " tmpfile " and " num_subs " substitutions"
+	    }
+	}
+
+    status = getline <tmpfile
+    if (debugging) print status " after trying to read " tmpfile
+    if (status > 0)
+	{
+	push_stack(tmpfile)
+	return tmpfile
+	}
+
+    if (debugging) print "could not open " tmpfile
+    return tmpfile
+}
+
+function usage() {
+    print "usage: include -h | [ -i ] [ -I incl-dir [ -I ... ] ] [ -n ] [ -D ] "
+    print ""
+    print " -I	member of the include path"
+    print " -n	print line numbers"
+    print " -D	turn on debug"
+    print " -i	indent the contents of each included file"
+}
+' JTESTS=$JTESTS $*

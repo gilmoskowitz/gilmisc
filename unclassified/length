@@ -1,0 +1,2 @@
+
+nawk '{printf("%6d\t%s\n", length, $0)}' $*

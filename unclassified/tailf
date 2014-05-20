@@ -1,0 +1,5 @@
+
+while [ ! -f $1 ] ; do
+	sleep 5
+done
+tail -f $1

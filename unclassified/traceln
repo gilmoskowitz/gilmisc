@@ -1,0 +1,49 @@
+#!/bin/ksh
+
+# for each of the programs listed below, show the path where we find it
+#	and show where it really comes from
+
+for BINARY in $* ; do
+    echo "$BINARY:"
+    BINARY_LOC=`which $BINARY`
+
+    # show where we found it
+    ls -ld $BINARY_LOC
+
+    if [ -h $BINARY_LOC ] ; then
+	# unravel all of the symbolic links
+	BINARY_DIR=`ls -ld $BINARY_LOC | awk '{print $NF}'`
+	BINARY_LOC=`basename $BINARY_DIR`
+
+	while [ "$BINARY_DIR" != . -a "$BINARY_DIR" != / -a -n "$BINARY_DIR" ] ; do
+	    if [ ! -h "$BINARY_DIR" ] ; then
+		BINARY_DIR=`dirname $BINARY_DIR`
+		BINARY_LOC=`basename $BINARY_DIR`/$BINARY_LOC
+
+	    else
+		ls -ld $BINARY_DIR
+		TMP_BINARY_DIR=`ls -ld $BINARY_DIR | awk '{print $NF}'`
+
+		# strip off a bad directory name from the beginning of the _LOC
+		BINARY_LOC=`echo $BINARY_LOC | awk -F/ '{ String = $2
+							  for (i = 3; i <= NF; i++)
+							      String = String "/" $i
+							  print String
+							}'`
+
+		# if symbolic link is relative
+		if [ `echo $TMP_BINARY_DIR | cut -c 1` != / ] ; then
+		    BINARY_DIR=`dirname $BINARY_DIR`/$TMP_BINARY_DIR
+		    BINARY_LOC=`basename $BINARY_DIR`/$BINARY_LOC
+		# if symbolic link is absolute
+		else
+		    BINARY_DIR=$TMP_BINARY_DIR
+		    BINARY_LOC=`basename $BINARY_DIR`/$BINARY_LOC
+		fi
+	    fi
+	done
+	ls -ld $BINARY_LOC
+    fi
+
+    echo
+done

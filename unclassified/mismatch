@@ -1,0 +1,11 @@
+for FILE in $* ; do
+    echo ${FILE}:
+    tr -d "[:blank:][:alnum:]!@#$%^&*_+|~;:,./?=<>-" < $FILE | cat -n | \
+	sed -e 's/{}//g
+		s/()//g
+		s/\[\]//g
+		s/''//g
+		s/``//g
+		s/""//g
+		/^[ 	]*[0-9]*[ 	]*$/d'
+done

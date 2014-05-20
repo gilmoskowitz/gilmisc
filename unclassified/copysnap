@@ -1,0 +1,123 @@
+
+PROGNAME=`basename $0`
+COPY_VER=
+COPY_BUILD=
+COPY_DEST_PARENT=$HOME/buildcopies
+COPY_ECHO=
+MAKE_LINK=true
+SNAP_ROOT=/gcm/where/gemstone_j
+
+USAGE="$PROGNAME [ -h ] [ -D ] [ -b build-id ] [ -d destdir ] [ -s speed ] [ -v product-version ]"
+
+if set -- `getopt hb:Dd:lns:v: $*` ; then
+    true
+else
+    echo $USAGE
+    exit 1
+fi
+
+while [ $1 != -- ] ; do
+    case $1 in
+	-h)	echo $USAGE
+		echo
+		echo "    -h	help - print this message"
+		echo "	  -D	debug - turn on shell tracing"
+		echo "    -b	build number"
+		echo "    -d	parent of all of your GS/J builds"
+		echo "    -l	copy the snapshot, but do not create the bas<version> link to it"
+		echo "    -n	do nothing - show what $PROGNAME would do"
+		echo "    -s	speed - fast or slow"
+		echo "    -v	product version (as found in the build tree)"
+		exit 0
+		;;
+	-D)	set -x
+		;;
+	-b)	COPY_BUILD=$2
+		shift
+		;;
+	-d)	COPY_DEST_PARENT=$2
+		shift
+		;;
+	-l)	MAKE_LINK=false
+		;;
+	-n)	COPY_ECHO=echo
+		;;
+	-s)	COPY_SPEED=$2
+		shift
+		;;
+	-v)	COPY_VER=$2
+		shift
+		;;
+	*)	echo "$PROGNAME: unknown argument \'$1\'"
+		echo $USAGE
+		exit 1
+		;;
+    esac
+    shift
+done
+if [ $1 = -- ] ; then
+    shift
+fi
+
+if [ -n "$COPY_ECHO" ] ; then
+    echo cd /gcm/where/gemstone_j
+fi
+cd /gcm/where/gemstone_j
+
+if [ -z "$COPY_VER" ] ; then
+    COPY_VER_PROMPT="Which release would you like to copy?
+`\ls -C`
+> "
+    echo "$COPY_VER_PROMPT"
+    read COPY_VER
+fi
+
+if [ -n "$COPY_ECHO" ] ; then
+    echo cd $COPY_VER/snaps.`uname -p`*
+fi
+cd $COPY_VER/snaps.`uname -p`*
+
+if [ -z "$COPY_BUILD" ] ; then
+    COPY_BUILD_PROMPT="Which build would you like to copy?
+`\ls -C | sed -e 's/snapshots\.//g'`
+> "
+    echo "$COPY_BUILD_PROMPT"
+    read COPY_BUILD
+fi
+
+if [ -n "$COPY_ECHO" ] ; then
+    echo cd snapshots.$COPY_BUILD
+fi
+cd snapshots.$COPY_BUILD
+
+if [ -z "$COPY_SPEED" ] ; then
+    COPY_SPEED_PROMPT="fast or slow?
+> "
+    echo "$COPY_SPEED_PROMPT"
+    read COPY_SPEED
+fi
+
+COPY_DEST_DIR=bas${COPY_VER}_b${COPY_BUILD}_${COPY_SPEED}
+COPY_DEST_FULL=${COPY_DEST_PARENT}/${COPY_DEST_DIR}
+if [ -d ${COPY_DEST_FULL} ] ; then
+    $COPY_ECHO mv ${COPY_DEST_FULL} ${COPY_DEST_FULL}.old
+fi
+$COPY_ECHO mkdir ${COPY_DEST_FULL}
+
+$COPY_ECHO ./copysnapj ${COPY_SPEED} ${COPY_DEST_FULL}
+
+if [ -n "$COPY_ECHO" ] ; then
+    echo cd $COPY_DEST_PARENT
+fi
+cd $COPY_DEST_PARENT
+
+if $MAKE_LINK ; then
+    $COPY_ECHO rm bas${COPY_VER}
+    $COPY_ECHO ln -s ${COPY_DEST_DIR} bas${COPY_VER}
+fi
+
+if [ -d ${COPY_DEST_FULL}/product/lib ] ; then
+    cd ${COPY_DEST_FULL}/product/lib
+    mv font.properties font.properties.build
+    ln -s font.properties.5.5.1 font.properties
+fi

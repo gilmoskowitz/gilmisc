@@ -1,0 +1,4 @@
+cd $HOME/bugreports
+echo "xterm control sequence to send data to Tek window"
+wc -l bugs* | grep -v otal | nawk '{ sub("bugs_on_00_", "on_"); print NR, $0 }' | graph | plot -Ttek
+echo "xterm control sequence to send revert back to VT window"

@@ -1,0 +1,56 @@
+#!/bin/ksh
+PROG=`basename $0`
+BACKUPDIR=$HOME/backup
+CURDIR=`pwd`
+VERBOSE=
+
+usage () {
+    echo "usage	$PROG -h"
+    echo "	$PROG [ -d backupDir ] [ -v ] { file | dir } [ ... ] }"
+} # usage
+
+if ! set -- `getopt hd:v $*` ; then
+    usage
+    exit 1
+fi
+
+while [ $1 != -- ] ; do
+    case $1 in
+	-h)	usage
+		exit 0
+		;;
+	-d)	BACKUPDIR=$2
+		shift
+		;;
+	-v)	VERBOSE=-v
+		;;
+	*)	echo $PROG: unknown option $1
+		usage
+		;;
+    esac
+    shift
+done
+if [ "$1" = -- ] ; then
+    shift
+fi
+
+if [ $# -lt 1 ] ; then
+    echo $PROG: need at least one filename
+    exit 1
+fi
+
+if [ ! -d $BACKUPDIR ] ; then
+	mkdir $BACKUPDIR
+fi
+
+for FILE in $* ; do
+	if [ -d "$FILE" ] ; then
+	    echo $PROG: $FILE is a directory - backing up each file in that directory
+	    backup $VERBOSE "$FILE"/*
+	elif [ ! -f "$FILE" ] ; then
+	    echo $PROG: $FILE is not a regular file
+	else
+	    NEWFILE=$BACKUPDIR/`basename $FILE`.`date +%y-%m-%d-%H%M-%S`
+	    compress -c $VERBOSE $FILE > ${NEWFILE}.Z
+	fi
+done

@@ -1,0 +1,29 @@
+:
+TYPE=level
+if [ $1 = -c ] ; then
+    TYPE=char
+    shift
+fi
+
+case $TYPE in
+    char )
+	nawk '
+	    {
+	    currLine=""
+	    for (i = length($0); i > 0; i--)
+		currLine = currLine substr($0, i, 1)
+	    print currLine
+	    }' $*
+	;;
+    level | *)
+	awk '
+	    {
+		lines[NR] = $0
+	    }
+	    END {
+		for (i = NR; i > 0; i--)
+		    print lines[i]
+	    }
+	    ' $*
+	;;
+esac

@@ -1,0 +1,62 @@
+PROG=`basename $0`
+VERBOSE=false
+
+USAGE="usage: $PROG [ -h ] [ -c classpath ] className [ ... ]"
+if ! set -- `getopt hc: $*` ; then
+    echo "$USAGE"
+    exit 1
+fi
+
+while [ "$1" != -- ] ; do
+    case $1 in
+	-h)	echo "$USAGE"
+		exit 0
+		;;
+	-c)	CLASSPATH=$2
+		shift
+		;;
+	*)	echo "unknown option $1"
+		exit 1
+		;;
+    esac
+    shift
+done
+if [ "$1" = -- ] ; then
+    shift
+fi
+
+if [ `echo $CLASSPATH | grep -c javautils` -ne 1 ] ; then
+    CLASSPATH=$HOME/src/javautils:$CLASSPATH
+    export CLASSPATH
+fi
+
+CLASS2FIND=$1
+
+SEP=`java PrintProps path.separator | awk '{print $2}'`
+
+for PROPERTY in java.class.path sun.boot.class.path gsj.class.path ; do
+    PATH2CHECK=`java PrintProps $PROPERTY | \
+	awk '{print $2}' | sed -e "s/$SEP/ /g"`
+
+    echo $PROPERTY according to the JVM contains: 1>&2
+
+    for i in $PATH2CHECK ; do
+	if [ $# -lt 1 ] ; then
+	    echo $i
+	else
+	    if $VERBOSE ; then echo checking $i... 1>&2 ; fi
+	    JARSUFFIX=`expr //$i : '.*\(\.jar\)'`
+	    if [ -d $i ] ; then
+		find $i -name $CLASS2FIND\*.class -print
+	    elif [ -r $i -a "$JARSUFFIX" = .jar ] ; then
+		JAROUTPUT=`jar tf $i | grep -w $CLASS2FIND`
+		if [ `echo $JAROUTPUT | wc -w` -gt 0 ] ; then
+		    echo $i
+		    echo $JAROUTPUT | tr " " "\n" | sed -e "s/^/	/"
+		fi
+	    elif [ -f -o -h ] ; then
+		echo Do not know how to look for class $CLASS2FIND in $i 1>&2
+	    fi
+	fi
+    done
+done

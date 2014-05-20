@@ -1,0 +1,39 @@
+#Just in case you need this for the Code Inspections, Mr Been was kind
+#enough to dig up a Line Of Code awk script for me....
+#MS
+#
+#----------------------------------------------------------------------
+# cntlines.sh - an awk script to count and classify lines of c code
+
+awk '\
+BEGIN {pf=FILENAME;print "                         file    lines	 code  comment	brace 	blank	preproc"}\
+pf != FILENAME {\
+	printf "%30s  %5d\t%5d\t%5d\t%5d\t%5d\t%5d\n",pf,L,N,C,K,B,P;\
+	l+=L;n+=N;c+=C;k+=K;b+=B;p+=P;\
+	L=0;N=0;C=0;K=0;B=0;P=0;\
+	pf=FILENAME;multi=1\
+	}\
+\
+{L++}	# increment line counter\
+/^#/ {	# preprocesser line\
+	P++;next;\
+	}\
+/^[ 	]*$/ { # blank line\
+	B++;next;\
+	}\
+/^[ 	]*(\/\*)|([ 	]*$\*\/)/ || /^[ 	]*\*\*/ { # comment only\
+	C++;next;\
+	}\
+/^[ 	]*{[ 	]*$/ || /}[ 	]*$/ { # brace alone\
+	K++;next;\
+	}\
+{N++}	# all other lines must be code\
+\
+END {\
+	printf "%30s  %5d\t%5d\t%5d\t%5d\t%5d\t%5d\n",pf,L,N,C,K,B,P;\
+	l+=L;n+=N;c+=C;k+=K;b+=B;p+=P;\
+	if (multi) printf "%30s  %5d\t%5d\t%5d\t%5d\t%5d\t%5d\n","",l,n,c,k,b,p;\
+	}' \
+$*
+----------------------------------------------------------------------
+

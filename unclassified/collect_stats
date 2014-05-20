@@ -1,0 +1,95 @@
+PROG=`basename $0`
+
+LABEL_COL=5
+VALUE_COL=6
+KEYWORD="^"
+
+usage() {
+    echo "usage: $PROG [ -k keyword ] [ -l N ] [ -v M ] filename [ ... ]"
+    echo "	-k	select values from lines containing this AWK regexp [ default: all lines ]"
+    echo "	-l	collect, group, and label stats by the Nth column [ default: 5 ]"
+    echo "	-v	analyze data in the Mth column [ default: 6 ]"
+    echo "	at least one file must be named on the command line"
+}
+
+set -- `getopt k:l:v: $*`
+
+if [ $? -ne 0 ] ; then
+    usage
+    exit 1
+fi
+
+while [ $1 != -- ] ; do
+    case $1 in
+	-h) usage
+	    exit 0
+	    ;;
+	-k) KEYWORD=$2
+	    shift 2
+	    ;;
+	-l) LABEL_COL=$2
+	    shift 2
+	    ;;
+	-v) VALUE_COL=$2
+	    shift 2
+	    ;;
+	-*) usage
+	    exit 1
+	    ;;
+    esac
+done
+
+if [ $1 = -- ] ; then
+    shift
+fi
+
+if [ $# -eq 0 ] ; then
+    usage
+    exit 1
+fi
+
+for FILE in $* ; do
+    nawk '
+	!($label_col in sum) {
+	    min[$label_col] = $value_col
+	    max[$label_col] = $value_col
+	}
+
+	$0 ~ keyword {
+	    count[$label_col]++
+	    sum[$label_col] += $value_col
+	    sum_sq[$label_col] += $value_col * $value_col
+	    if ($value_col < min[$label_col])
+		min[$label_col] = $value_col
+	    if ($value_col > max[$label_col])
+		max[$label_col] = $value_col
+	    if (length($label_col) > widest_label)
+		widest_label = length($label_col)
+	}
+
+	END {
+	    printf("%*s %10s %10s %10s %10s %10s %10s\n",
+		widest_label, "label",
+		"count",
+		"sum",
+		"avg",
+		"std dev", 
+		"min",
+		"max")
+	    for (col in sum)
+		{
+		if (count[col] == 1)
+		    count[col]++
+		printf("%*s %10d %10d %10d %10d %10d %10d\n",
+		    widest_label, col,
+		    count[col],
+		    sum[col],
+		    sum[col]/count[col],
+		    (sum_sq[col] - sum[col]) / (count[col] - 1),
+		    min[col],
+		    max[col])
+		}
+	}
+
+    ' keyword=$KEYWORD label_col=$LABEL_COL value_col=$VALUE_COL $FILE
+done

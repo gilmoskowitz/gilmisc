@@ -1,0 +1,13 @@
+:
+PROG=`basename $0`
+
+if [ x$1 = "x-h" -o $# -lt 2 ] ; then
+	echo "usage: $PROG { first-line | - } { last-line | - } [ file ]"
+	exit 1
+elif  [ $1 = - ] ; then
+	head -$2 $3
+elif [ $2 = - ] ; then
+	tail +$1 $3
+else
+	head -$2 $3 | tail +$1
+fi

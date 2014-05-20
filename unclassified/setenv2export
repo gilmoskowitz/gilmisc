@@ -1,0 +1,4 @@
+grep setenv myenv.csh | grep -v \# | awk '{print $2 "=" $3
+envvar[NR] = $2 }                                         
+END {for (i in envvar)
+print "export " envvar[i]}'                               
