@@ -1,0 +1,8 @@
+:set shiftwidth=2
+:set expandtab
+:set autoindent
+:set autowrite
+:set cindent
+:set ignorecase
+:set guifont=Menlo\ Regular:h13
+:set ruler
