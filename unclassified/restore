@@ -1,0 +1,239 @@
+PROG=`basename $0`
+DELETEAFTERWARDS=false
+INTERACTIVERM=false
+EXITVAL=0
+DEFAULTBACKUPDIR=$HOME/backups
+ARCHIVE=false
+KEEP=1
+TMPFILE=${TMPDIR:-/tmp}/$PROG.$$
+
+# allow extended pattern matching operators (used in cleanup section)
+shopt -s extglob
+
+if [ -z "$BACKUPDIR" ] ; then
+    BACKUPDIR="$DEFAULTBACKUPDIR"
+fi
+
+if [ ! -d "$BACKUPDIR" ] ; then
+    echo "$BACKUPDIR is not available - Using $DEFAULTBACKUPDIR instead"
+    BACKUPDIR="$DEFAULTBACKUPDIR"
+fi
+
+usage() {
+    echo "usage:"
+    echo "backup -h"
+    echo "backup [ -d ] file [ ... ]"
+    echo "backup [ -d ] [ -t archivename ] file [ ... ]"
+    echo
+    echo "-d	delete each file (with rm) after backing it up"
+    echo "-t	create an archive of the files listed instead of individual backups"
+    echo "	and use 'archivename' as the base filename of the archive,"
+    echo "	using the basename of the current directory if archivename=."
+    echo
+    echo "restore -h"
+    echo "restore [ basefilename [ ... ] ]"
+    echo
+    echo "cleanup -h"
+    echo "cleanup [ -i ] [ -n # ]"
+    echo
+    echo "-i	interactive remove"
+    echo "-n	save # backup copies (default is 1 (one))"
+}
+
+case $PROG in
+    backup)
+	ARGS=`getopt hdt: $*`
+	;;
+    restore)
+	ARGS=`getopt h $*`
+	;;
+    cleanup)
+	ARGS=`getopt hin: $*`
+	;;
+    *)
+	usage
+	exit 1
+	;;
+esac
+
+if [ $? != 0 ] ; then
+    usage
+    exit 1
+fi
+set -- $ARGS
+
+while [ $1 != -- ] ; do
+    case "$1" in
+	-h)
+	    usage
+	    exit 0
+	    ;;
+	-d)
+	    DELETEAFTERWARDS=true
+	    ;;
+	-i)
+	    INTERACTIVERM=true
+	    ;;
+	-n)
+	    KEEP=$2
+	    shift
+	    ;;
+	-t)
+	    ARCHIVE=true
+	    if [ $2 = . ] ; then
+		ARCHIVEBASE=`basename \`pwd\``
+	    else
+		ARCHIVEBASE=$2
+	    fi
+	    shift
+	    ;;
+	*)
+	    usage
+	    exit 1
+	    ;;
+    esac
+    shift
+done
+shift #past the --
+
+if [ -z "$*" -a $PROG != restore -a $PROG != cleanup ] ; then
+    echo $PROG: no files given
+    usage
+    exit 1
+fi
+
+
+if [ $PROG = backup ] ; then
+    if [ ! -d $BACKUPDIR ] ; then
+	if ! mkdir $BACKUPDIR ; then
+	    exit $?
+	fi
+    fi
+
+    DATESTAMP=`date +"%Y_%m_%d_%H%M"`
+    if $ARCHIVE ; then
+	ARCHIVENAME="$BACKUPDIR/$DATESTAMP.$ARCHIVEBASE.tgz"
+	if tar cvzf $ARCHIVENAME --exclude .svn $@ ; then
+	    echo created $ARCHIVENAME
+	else
+	    echo error creating $ARCHIVE
+	    exit 3
+	fi
+	if $DELETEAFTERWARDS ; then
+	    for FILE ; do
+		if [ -d $FILE ] ; then
+		    ANS=""
+		    while [ "$ANS" != "y" -a "$ANS" != "n" ] ; do
+			read -p "remove directory $FILE? ( y or n )" ANS
+		    done
+		    if [ "$ANS" = "y" ] ; then
+			RMFLAG=-r
+		    else
+			continue
+		    fi
+		else
+		    RMFLAG=
+		fi
+		if rm $RMFLAG $FILE ; then
+		    echo removed $FILE
+		else
+		    echo error removing $FILE
+		    EXITVAL=`expr $EXITVAL + 1`
+		fi
+	    done
+	fi
+    else
+	for FILE ; do
+	    BASE=`basename $FILE`
+            if [ -d $FILE ] ; then
+                if tar cvzf $BACKUPDIR/$DATESTAMP.$BASE.tgz --exclude .svn $@ ; then
+                    echo created $ARCHIVENAME
+                else
+                    echo error creating $ARCHIVE
+                    exit 3
+                fi
+              
+	    elif cp $FILE $BACKUPDIR/$DATESTAMP.$BASE ; then
+		echo created $DATESTAMP.$BASE
+		if $DELETEAFTERWARDS ; then
+		    if rm $FILE ; then
+			echo removed $FILE
+		    else
+			echo error removing $FILE
+			EXITVAL=`expr $EXITVAL + 1`
+		    fi
+		fi
+	    else
+		echo error creating $BACKUPDIR/$DATESTAMP.$BASE
+	    fi
+	done
+    fi
+
+elif [ $PROG = restore ] ; then
+    if [ -z "$*" ] ; then
+	ls $BACKUPDIR | cut -f 2- -d. | sort -u | rs
+	read -e -p "Which file(s) would you like to restore? " -a FILELIST
+    else
+	FILELIST="$*"
+    fi
+    for FILE in $FILELIST ; do
+	FVERSION=""
+	ls $BACKUPDIR/*.$FILE | cut -f 1 -d. | sort -u | rs | tee $TMPFILE
+	if [ ! -s "$TMPFILE" ] ; then
+	    echo Could not find $FILE to restore
+	    EXITVAL=`expr $EXITVAL + 1`
+	else
+	    read -e -p "Which version would you like to restore? [ latest ]" FVERSION
+	    if [ -z "$FVERSION" ] ; then
+		RESTOREME=`ls $BACKUPDIR/*.$FILE | tail -1`
+	    else
+		RESTOREME=$BACKUPDIR/$FVERSION.$FILE
+	    fi
+	    if [ -f ./$FILE ] ; then
+		ANS=""
+		while [ "$ANS" != "y" -a "$ANS" != "n" ] ; do
+		    read -p "overwrite existing $FILE? ( y or n )" ANS
+		done
+	    else
+		ANS=y
+	    fi
+	    if [ "$ANS" = "y" ] ; then
+		cp $RESTOREME ./$FILE
+	    else
+		EXITVAL=`expr $EXITVAL + 1`
+	    fi
+	fi
+    done
+
+elif [ $PROG = cleanup ] ; then
+    FILELIST=`ls $BACKUPDIR | cut -f 2- -d. | sort -u`
+    for FILE in $FILELIST ; do
+	\ls $BACKUPDIR/+([0-9_]).$FILE | sort -r > $TMPFILE
+	TOKEEP=`head -$KEEP $TMPFILE`
+	TORM=`tail +$((KEEP + 1)) $TMPFILE`
+	if [ -n "$TORM" ] ; then
+	    echo
+	    echo "Keeping $TOKEEP"
+	    if $INTERACTIVERM ; then
+		ANS=""
+		while [ "$ANS" != "y" -a "$ANS" != "n" ] ; do
+		    read -p "Remove $TORM? ( y or n )" ANS
+		done
+		if [ "$ANS" = "y" ] ; then
+		    rm $TORM
+		else
+		    EXITVAL=`expr $EXITVAL + 1`
+		fi
+	    else
+		echo Removing $TORM
+		rm $TORM
+	    fi
+	fi
+    done
+
+else
+    usage
+    exit 1
+fi
+
+exit $EXITVAL
