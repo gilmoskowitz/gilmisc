@@ -1,0 +1,7 @@
+for FILE in $* ; do
+  for DIR in `echo $PATH | tr ":" " "` ; do
+    if [ -x "$DIR/$FILE" ] ; then
+      echo "$DIR/$FILE"
+    fi
+  done
+done

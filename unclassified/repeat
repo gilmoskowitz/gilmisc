@@ -1,0 +1,12 @@
+while true ; do
+  eqs=""
+  DATE=`date`
+  i=`echo $DATE | wc -c`
+  while [ $i -lt ${COLUMNS:-80} ] ; do
+    eqs="${eqs}="
+    i=`expr $i + 1`
+  done
+  echo $DATE $eqs
+  
+  eval $@
+done

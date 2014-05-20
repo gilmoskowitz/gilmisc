@@ -1,0 +1,6 @@
+for i in $* ; do
+  indent $i $i.indented \
+         -bacc -bad -bap -bbb -nbc -bl -nbs -c50 -cdb -nce -ci4 -cli0 \
+         -d0 -di0 -ndj \
+         -ei -eei -nfc1 -i2 -ip -l80 -lp -npcs -npsl -nsc -sob
+done
