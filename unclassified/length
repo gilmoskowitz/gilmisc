@@ -1,2 +1,2 @@
-
-nawk '{printf("%6d\t%s\n", length, $0)}' $*
+#!/bin/bash
+awk '{printf("%6d\t%s\n", length, $0)}' $*
