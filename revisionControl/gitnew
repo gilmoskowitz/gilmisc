@@ -1,0 +1,53 @@
+#!/bin/bash
+
+PROG=`basename $0`
+TMPFILE=$TMPDIR/$PROG.$$
+STARTDIR=`pwd`
+
+GITUSER=`whoami`
+GITPARENT=xtuple
+REPO=
+
+usage() {
+  echo "$PROG -h"
+  echo "$PROG [ -u username ] [ -v ] repository [...]"
+  if [ $# -gt 0 ] ; then
+    echo "set up a new clone of a repository hosted on github"
+    echo
+    echo "-h            print this usage and exit"
+    echo "-u username     username is your username on github"
+    echo "repository is the name of the github repository"
+  fi
+}
+
+while getopts "hu:v" opt ; do
+  case $opt in
+    h) usage true
+       exit 0
+       ;;
+    u) GITUSER=$OPTARG
+       ;;
+    v) set -x
+       ;;
+  esac
+done
+
+SHIFTNUM=(($OPTIND - 1))
+shift $SHIFTNUM
+if [ $# -le 0 ] ; then
+  echo $PROG: at least one repository is required
+  usage
+  exit 1
+fi
+
+for REPO in $@ ; do
+  REPO=`basename $REPO .git`
+  REMOTE=`echo $REPO | tr "a-z-" "A-Z_"`
+  git clone https://github.com/$GITUSER/$REPO.git                || exit 2
+  cd $REPO                                                       || exit 2
+  git submodule update --init --recursive                        || exit 2
+  git remote add $REMOTE https://github.com/$GITPARENT/$REPO.git || exit 2
+  git fetch $REMOTE                                              || exit 2
+  git merge $REMOTE/master                                       || exit 2
+  cd $STARTDIR                                                   || exit 2
+done

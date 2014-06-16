@@ -1,0 +1,15 @@
+#!/bin/ksh
+PROG=`basename $0`
+
+if [ $# -lt 1 ] ; then
+    echo usage: "$PROG cvs-controlled-file [ ... ]"
+fi
+
+for FILE in $* ; do
+    cvs diff $FILE | nawk '/[0-9][adc][0-9]/ {
+	print "'$FILE':\t" $2 - $1
+    }' FS="[adc]" | tail -1
+done | awk '{ total += $2
+	      print
+	    }
+	    END { print "total:\t" total }'
