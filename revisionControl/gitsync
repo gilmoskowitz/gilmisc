@@ -21,7 +21,7 @@ gitSyncFunc() {
 
   git checkout master                   || exit 2
 
-  for REMOTE in `git remote | grep -v origin` ; do
+  for REMOTE in origin `git remote | grep -v origin` ; do
     git fetch $REMOTE                   || exit 2
     git merge $REMOTE/master            || exit 2
 # TODO: run git submodule update --init for uninitialized submodules
