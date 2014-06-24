@@ -6,7 +6,7 @@ STARTDIR=`pwd`
 
 usage() {
   cat <<EOF
-$PROG [ dir [ ... ] ]
+$PROG [ -v ] [ dir [ ... ] ]
 
 Synchronize the listed directories with their git remotes.
 If no directories are specified, try updating the current
@@ -31,6 +31,15 @@ gitSyncFunc() {
 
   git checkout $STARTBR                 || exit 2
 }
+
+while getopts "v" opt ; do
+  case $opt in
+    v) set -x
+       ;;
+  esac
+done
+
+shift $(($OPTIND - 1))
 
 if [ $# -eq 0 ] ; then
   if [ ! -d .git ] ; then
