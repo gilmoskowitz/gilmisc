@@ -6,3 +6,12 @@
 :set ignorecase
 :set guifont=Menlo\ Regular:h13
 :set ruler
+
+"get pathogen as a prerequisite to syntastic
+"$ mkdir ~/.vim/autoload ~/.vim/bundle
+"$ curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
+:execute pathogen#infect()
+:syntax on
+:filetype plugin indent on
+"get syntastic (edit-time code linting)
+"$ cd ~/.vim/bundle && git clone https://github.com/scrooloose/syntastic.git
