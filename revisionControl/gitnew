@@ -10,23 +10,26 @@ REPO=
 
 usage() {
   echo "$PROG -h"
-  echo "$PROG [ -u username ] [ -v ] repository [...]"
+  echo "$PROG [ -u username ] [ -U master-user ] [ -v ] repository [...]"
   if [ $# -gt 0 ] ; then
     echo "set up a new clone of a repository hosted on github"
     echo
-    echo "-h            print this usage and exit"
-    echo "-u username   username is your username on github"
-    echo "-v            verbose"
+    echo "-h             print this usage and exit"
+    echo "-u username    your username on github"
+    echo "-U master-user github owner of the repository you cloned"
+    echo "-v             verbose"
     echo "repository is the name of the github repository"
   fi
 }
 
-while getopts "hu:v" opt ; do
+while getopts "hu:U:v" opt ; do
   case $opt in
     h) usage true
        exit 0
        ;;
     u) GITUSER=$OPTARG
+       ;;
+    U) GITPARENT=$OPTARG
        ;;
     v) set -x
        ;;
@@ -42,7 +45,7 @@ fi
 
 for REPO in $@ ; do
   REPO=`basename $REPO .git`
-  REMOTE=`echo $REPO | tr "a-z-" "A-Z_"`
+  REMOTE=`echo $GITPARENT | tr "a-z-" "A-Z_"`
   git clone https://github.com/$GITUSER/$REPO.git                || exit 2
   cd $REPO                                                       || exit 2
   git submodule update --init --recursive                        || exit 2
