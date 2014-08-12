@@ -15,21 +15,12 @@ EOF
 }
 
 gitSyncFunc() {
-# TODO: git branch --list "*" ???
-  STARTBR=`git branch | awk '/^\*/ { print $2 }'`
-  if [ "$?" -ne 0 ] ; then exit 2 ; fi
-
-  git checkout master                   || exit 2
-
-  for REMOTE in origin `git remote | grep -v origin` ; do
+  local REMOTES="origin `git remote | grep -v origin`"
+  for REMOTE in $REMOTES ; do
     git fetch $REMOTE                   || exit 2
-    git merge $REMOTE/master            || exit 2
 # TODO: run git submodule update --init for uninitialized submodules
     git submodule update --recursive    || exit 2
-    git push origin master              || exit 2
   done
-
-  git checkout $STARTBR                 || exit 2
 }
 
 while getopts "v" opt ; do
