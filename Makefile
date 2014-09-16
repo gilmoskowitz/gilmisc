@@ -4,7 +4,7 @@ SUBDIRS  = unclassified revisionControl
 DOTFILES = Dotvimrc Dotbashrc Dotbash_profile
 FILES    = $(DOTFILES)
 
-.PHONY: all install clean $(SUBDIRS)
+.PHONY: all imports install clean $(SUBDIRS)
 
 all:	$(SUBDIRS)
 	@echo Not much to do yet

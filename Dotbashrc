@@ -1,20 +1,45 @@
-source "$HOME"/.git-prompt.bash
-source "$HOME"/.git-completion.bash
-#PROMPT_COMMAND='__git_ps1 "\u@\h:\w " "\\\$ "'
-PS1='\u@\h:\W $(__git_ps1 "%s")\$ '
-# from tjwebb:
-# PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]$(eval "echo ${SHORTPATH}")\[\033[00m\]$(__git_ps1 " (%s)") \$ '
-
 set -o vi
+export LESS=-X
+umask go-rwx
 
-#PGDIR=/usr/local/pgsql/09.3.4
-PGDIR=/usr/local/pgsql/09.1.14
+# PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]$(eval "echo ${SHORTPATH}")\[\033[00m\]$(__git_ps1 " (%s)") \$ '
+[ -e $HOME/.git-prompt.bash ]     && source $HOME/.git-prompt.bash
+[ -e $HOME/.git-completion.bash ] && source $HOME/.git-completion.bash
+if [ -e $HOME/.git-prompt.bash ] ; then
+  PS1='\h:\W $(__git_ps1 "%s")\$ '
+else
+  PS1='\h:\W \$ '
+fi
+
+function pman {
+  if [ `uname -s` = Darwin ] ; then
+    TMPFILE=/tmp/pman.$$.ps
+    man -t $* > $TMPFILE && open -a Preview $TMPFILE
+  else
+    man $*
+  fi
+}
+
+PGDIR=/usr/local/postgres/pg912
+#QTDIR=/usr/local/Trolltech/Qt5.0.1-binary/5.0.1/clang-64
+#QTDIR=/usr/local/Trolltech/Qt-4.8.0
 QTDIR=/usr/local/Trolltech/Qt-4.8.6
+FLTKDIR=/usr/local/fltk/fltk-1.3.2
+FORTRANDIR="$HOME/binaries/usr/local"
+FDK_EXE="/Users/gilmoskowitz/bin/FDK/Tools/osx"
 
-for DIR in "$PGDIR/bin" "$QTDIR/bin" "$HOME/bin" ; do
-  if [ -d "$DIR" ] && ! [[ "$PATH" =~ "$DIR" ]] ; then
-    PATH="$DIR:$PATH"
+for DIR in "$FDK_EXE" "$PGDIR" "$QTDIR" "$FORTRANDIR" "$FLTKDIR" "$HOME" ; do
+  if [ -d "$DIR" ] ; then
+    if [ -d "$DIR/bin" ] && ! [[ "$PATH" =~ "$DIR/bin" ]] ; then
+      PATH="$DIR/bin:$PATH"
+    elif ! [[ "$PATH" =~ "$DIR" ]] ; then
+      PATH="$DIR:$PATH"
+    fi
   fi
 done
 
+MANPATH="/usr/local/man:$MANPATH"
+
 export PATH
+export MANPATH
+export FDK_EXE

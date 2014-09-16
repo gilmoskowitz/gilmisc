@@ -6,6 +6,7 @@
 :set ignorecase
 :set guifont=Menlo\ Regular:h13
 :set ruler
+:syntax on
 
 "get pathogen as a prerequisite to syntastic
 "$ mkdir ~/.vim/autoload ~/.vim/bundle
