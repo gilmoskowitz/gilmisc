@@ -1,0 +1,55 @@
+set -o vi
+export LESS=-X
+
+[ -e $HOME/.git-prompt.bash ]     && source $HOME/.git-prompt.bash
+[ -e $HOME/.git-completion.bash ] && source $HOME/.git-completion.bash
+if [ -e $HOME/.git-prompt.bash ] ; then
+  PS1='\h:\W $(__git_ps1 "%s")\$ '
+else
+  PS1='\h:\W \$ '
+fi
+
+function pman {
+  if [ `uname -s` = Darwin ] ; then
+    TMPFILE=/tmp/pman.$$.ps
+    man -t $* > $TMPFILE && open -a Preview $TMPFILE
+  else
+    man $*
+  fi
+}
+
+umask go-rwx
+
+PATH="$HOME/bin:$PATH"
+MANPATH="/usr/local/man:$MANPATH"
+
+PGDIR=/usr/local/postgres/pg912
+if [ -d "$PGDIR" ] ; then
+  PATH="$PGDIR/bin:$PATH"
+fi
+
+# Initialization for FDK command line tools.Thu Jan 17 14:34:51 2013
+#FDK_EXE="/Users/gilmoskowitz/bin/FDK/Tools/osx"
+if [ -d "$FDK_EXE" ] ; then
+  PATH="$PATH:$FDK_EXE"
+fi
+
+#QTDIR=/usr/local/Trolltech/Qt5.0.1-binary/5.0.1/clang-64
+QTDIR=/usr/local/Trolltech/Qt-4.8.0
+if [ -d "$QTDIR" ] ; then
+  PATH="$QTDIR/bin:${PATH}"
+fi
+
+#FLTKDIR=/usr/local/fltk/fltk-1.3.2
+if [ -d "$FLTKDIR" ] ; then
+  PATH="$FLTKDIR/bin:${PATH}"
+fi
+
+#FORTRANDIR="$HOME/binaries/usr/local"
+if [ -d "$FORTRANDIR" ] ; then
+  PATH="${FORTRANDIR}/bin:${PATH}"
+fi
+
+export PATH
+export MANPATH
+export FDK_EXE
