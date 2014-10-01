@@ -1,6 +1,10 @@
+OS=`uname -s`
 set -o vi
-export LESS=-X
 umask go-rwx
+
+if [ "$OS" != Darwin ] ; then
+  export LESS=-X
+fi
 
 # PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]$(eval "echo ${SHORTPATH}")\[\033[00m\]$(__git_ps1 " (%s)") \$ '
 [ -e $HOME/.git-prompt.bash ]     && source $HOME/.git-prompt.bash
