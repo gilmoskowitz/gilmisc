@@ -1,6 +1,6 @@
 #
 # make sure that every SUBDIR has a corresponding target below
-SUBDIRS  = unclassified revisionControl
+SUBDIRS  = unclassified revisionControl shellAids
 DOTFILES = Dotvimrc Dotbashrc Dotbash_profile
 FILES    = $(DOTFILES)
 
