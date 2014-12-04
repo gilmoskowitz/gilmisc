@@ -1,0 +1,30 @@
+#!/bin/bash
+
+PROG=$0
+TEXT="$*"
+STAR="*"
+WIDTH=${COLUMNS:-80}
+
+TEXTLEN=$(echo -- $TEXT | wc -c)
+STARLEN=$[$WIDTH - $TEXTLEN + 2]
+MINLEN=$[$WIDTH / 4]
+
+function stars() {
+  local CNT=${1:-$STARLEN}
+  local STARS
+
+  while [ $CNT -gt 0 ] ; do
+    STARS="${STARS}${STAR}"
+    CNT=$[$CNT - 1]
+  done
+
+  echo "$STARS"
+}
+
+if [ $STARLEN -lt $MINLEN ] ; then
+  echo $TEXT
+  stars $[$WIDTH - 1]
+else
+  echo -n "$TEXT "
+  stars
+fi
