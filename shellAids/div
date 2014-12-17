@@ -16,7 +16,7 @@ EOUSAGE
 function stars() {
   local CNT=${1:-$STARLEN}
   local STARS
-  local STARWIDTH=$[$(echo $STAR | wc -c) - 1]
+  local STARWIDTH=$[$(echo "$STAR" | wc -c) - 1]
 
   if [ $STARWIDTH -lt 1 ] ; then
     STARWIDTH=1
