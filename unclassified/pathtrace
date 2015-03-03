@@ -1,0 +1,9 @@
+PROG=`basename $0`
+
+for ARG in $@ ; do
+  BASE="$ARG"
+  until [ "$BASE" = / -o "$BASE" = . ] ; do
+    ls -ld $BASE 2>/dev/null
+    BASE=`dirname "$BASE"`
+  done
+done

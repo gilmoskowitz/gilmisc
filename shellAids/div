@@ -1,25 +1,60 @@
 #!/bin/bash
 
-PROG=$0
-TEXT="$*"
+PROG=`basename $0`
 STAR="*"
-WIDTH=${COLUMNS:-80}
+WIDTH=80
 
-TEXTLEN=$(echo -- $TEXT | wc -c)
-STARLEN=$[$WIDTH - $TEXTLEN + 2]
-MINLEN=$[$WIDTH / 4]
+SHOWDATE=false
+
+function usage() {
+cat <<EOUSAGE
+$PROG -h
+$PROG [ -c char ] [ -d ] [ -w width ] [ string-to-display ]
+EOUSAGE
+}
 
 function stars() {
   local CNT=${1:-$STARLEN}
   local STARS
+  local STARWIDTH=$[$(echo "$STAR" | wc -c) - 1]
+
+  if [ $STARWIDTH -lt 1 ] ; then
+    STARWIDTH=1
+  fi
 
   while [ $CNT -gt 0 ] ; do
     STARS="${STARS}${STAR}"
-    CNT=$[$CNT - 1]
+    CNT=$[$CNT - STARWIDTH]
   done
 
   echo "$STARS"
 }
+
+while getopts hc:dw: OPTION ; do
+  case $OPTION in
+    h) usage
+       exit 0
+       ;;
+    c) STAR=$OPTARG
+       ;;
+    d) SHOWDATE=true
+       ;;
+    w) WIDTH=$[$OPTARG + 0]
+       if [ $WIDTH -eq 0 ] ; then WIDTH=80 ; fi
+       ;;
+  esac
+done
+
+shift $[$OPTIND - 1]
+
+TEXT="$*"
+if $SHOWDATE ; then
+  TEXT="$(date) $TEXT"
+fi
+
+TEXTLEN=$(echo -- $TEXT | wc -c)
+STARLEN=$[$WIDTH - $TEXTLEN + 2]
+MINLEN=$[$WIDTH / 4]
 
 if [ $STARLEN -lt $MINLEN ] ; then
   echo $TEXT
