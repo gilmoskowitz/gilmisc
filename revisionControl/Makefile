@@ -1,5 +1,5 @@
 PROGS =  cvsbackup.pl	cvsgrew		diffcnt		sdiffcvs        \
-	 gitnew		gitsync
+	 gitnew
 
 .PHONY: all install clean $(SUBDIRS)
 
