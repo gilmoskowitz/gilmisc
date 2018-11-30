@@ -8,7 +8,7 @@ process.argv.forEach(function(val, index, ary) {
     ;
   
   data.forEach(function (val, index, ary) {
-    var fields = [ val.name, val.private, val.html_url, val.description ];
+    var fields = [ val.name, val.default_branch, val.private, val.html_url, val.description ];
     console.log(fields.join('\t'));
   });
 });

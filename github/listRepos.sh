@@ -14,18 +14,18 @@ JSPROG="
       ;
     
     data.forEach(function (val, index, ary) {
-      var fields = [ val.name, val.default_branch, val.private, val.html_url, val.description ];
+      var fields = [ val.name, val.private, val.html_url, val.description ];
       console.log(fields.join('\t'));
     });
   });
 "
 
 NODE=node
-command -v $NODE        || NODE=nodejs
-command -v $NODE        || exit 1
+command -v $NODE > /dev/null    || NODE=nodejs
+command -v $NODE > /dev/null    || exit 1
 
 rm   -rf "$DESTDIR"
-mkdir -p "$DESTDIR"     || exit 1
+mkdir -p "$DESTDIR"             || exit 1
 
 echo $JSPROG > $DESTDIR/$PROG.js
 

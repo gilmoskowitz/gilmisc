@@ -2,43 +2,21 @@
 
 PROG=`basename $0`
 STAR="*"
-WIDTH=80
-
+WIDTH=${COLUMNS:-80}
 SHOWDATE=false
 
 function usage() {
-cat <<EOUSAGE
-$PROG -h
-$PROG [ -c char ] [ -d ] [ -w width ] [ string-to-display ]
-EOUSAGE
-}
-
-function stars() {
-  local CNT=${1:-$STARLEN}
-  local STARS
-  local STARWIDTH=$[$(echo "$STAR" | wc -c) - 1]
-
-  if [ $STARWIDTH -lt 1 ] ; then
-    STARWIDTH=1
-  fi
-
-  while [ $CNT -gt 0 ] ; do
-    STARS="${STARS}${STAR}"
-    CNT=$[$CNT - STARWIDTH]
-  done
-
-  echo "$STARS"
+cat <<-EOUSAGE
+	$PROG -h
+	$PROG [ -c char ] [ -d ] [ -w width ] [ string-to-display ]
+	EOUSAGE
 }
 
 while getopts hc:dw: OPTION ; do
   case $OPTION in
-    h) usage
-       exit 0
-       ;;
-    c) STAR=$OPTARG
-       ;;
-    d) SHOWDATE=true
-       ;;
+    h) usage ; exit 0 ;;
+    c) STAR=$OPTARG   ;;
+    d) SHOWDATE=true  ;;
     w) WIDTH=$[$OPTARG + 0]
        if [ $WIDTH -eq 0 ] ; then WIDTH=80 ; fi
        ;;
@@ -52,14 +30,12 @@ if $SHOWDATE ; then
   TEXT="$(date) $TEXT"
 fi
 
-TEXTLEN=$(echo -- $TEXT | wc -c)
-STARLEN=$[$WIDTH - $TEXTLEN + 2]
-MINLEN=$[$WIDTH / 4]
-
-if [ $STARLEN -lt $MINLEN ] ; then
-  echo $TEXT
-  stars $[$WIDTH - 1]
-else
+if [ -n "$TEXT" ] ; then
   echo -n "$TEXT "
-  stars
+else
+  echo -n "$STAR"
 fi
+for (( WIDTH-- ; $WIDTH > "${#TEXT}" ; WIDTH=$WIDTH - ${#STAR} )) ; do
+  echo -n "$STAR"
+done
+echo

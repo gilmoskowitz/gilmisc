@@ -1,0 +1,94 @@
+#!/bin/bash
+PROG=`basename $0`
+TYPEREGEX=""
+
+usage() {
+    echo "Usage:	$PROG -h"
+    echo "	$PROG [ -f ] [ -i ] [ -t ] string filename [ filename [ ... ] ]"
+    echo
+    echo "Search through the named files for the appearance of string in SQL"
+    echo "and PL/PGSQL objects (such as tables, functions, and indexes)."
+    echo
+    echo "-h	get this usage message and exit"
+    echo "-f	restrict search to function definitions"
+    echo "-i	restrict search to index definitions"
+    echo "-t	restrict search to table definitions"
+    echo
+    echo "If both -t and -f are passed, the last one on the command line is honored"
+}
+
+ARGS=`getopt hfit $*`
+if [ $? != 0 ] ; then
+    usage
+    exit 1
+fi
+set -- $ARGS
+
+for ARG ; do
+    TYPE=""
+    case "$ARG" in
+	-h)
+	    usage
+	    exit 0
+	    ;;
+	-f)
+	    TYPE=function
+	    shift
+	    ;;
+	-i)
+	    TYPE=index
+	    shift
+	    ;;
+	-t)
+	    TYPE=table
+	    shift
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	*)
+	    usage
+	    exit 1
+	    ;;
+    esac
+    if [ -n "$TYPEREGEX" ] ; then
+	TYPEREGEX="$TYPEREGEX|"
+    fi
+    if [ -n "$TYPE" ] ; then
+	TYPEREGEX="${TYPEREGEX}${TYPE}"
+    fi
+done
+if [ -z "$TYPEREGEX" ] ; then
+    TYPEREGEX="function|index|table"
+fi
+TYPEREGEX="create.*($TYPEREGEX)"
+
+if [ -z "$1" ] ; then
+    echo "$PROG: missing search string"
+    usage
+    exit 1
+fi
+STRING="$1"
+shift
+
+if [ -z "$1" ] ; then
+    echo "$PROG: missing search files"
+    usage
+    exit 1
+fi
+
+for FILE ; do
+    echo $FILE =====================================================
+    tr "[:upper:]" "[:lower:]" < $FILE | \
+	awk '
+	     { sub("--.*", "") }	# simplistically strip out comments
+	     /revoke|grant|copy/ { createStmt = "" ; inObject = 0 }
+	     /'"$TYPEREGEX"'/ { createStmt = $0 ; inObject = 1 ; next }
+	     /'"$STRING"'/ && inObject { if (length(createStmt)) {
+				print createStmt
+				createStmt = ""
+			     }
+			     print $0
+			   }'
+done

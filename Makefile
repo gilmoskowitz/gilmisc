@@ -10,7 +10,7 @@ all:	$(SUBDIRS)
 	@echo Not much to do yet
 
 install: $(SUBDIRS) $(FILES)
-	for DOT in $(DOTFILES) ; do \
+	for DOT in dotFiles/$(DOTFILES) ; do \
 	  cp $$DOT $(HOME)/`basename $$DOT | sed -e "s/Dot/./"` ; \
 	done
 	for DIR in $(SUBDIRS) ; do $(MAKE) -$(MAKEFLAGS) -C $$DIR $@ ; done

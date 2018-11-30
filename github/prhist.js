@@ -8,7 +8,7 @@ process.argv.forEach(function(val, index, ary) {
     ;
 
   data.forEach(function (val, index, ary) {
-    var fields = [ val.base.repo.name, val.number, val.user.login, val.created_at, val.merged_at, val.title ];
+    var fields = [ val.base.repo.name, val.base.repo.default_branch, val.number, val.user.login, val.created_at, val.merged_at, val.title ];
     console.log(fields.join('\t'));
   });
 });
