@@ -102,6 +102,8 @@ MainWindow::MainWindow(QWidget *parent)
     contentsLabel = new QLabel;
     contentsLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
+    completer = new QCompleter(this);
+
     connect(modelCombo, SIGNAL(activated(int)), this, SLOT(changeModel()));
     connect(modeCombo, SIGNAL(activated(int)), this, SLOT(changeMode(int)));
     connect(caseCombo, SIGNAL(activated(int)), this, SLOT(changeCase(int)));
@@ -220,8 +222,6 @@ void MainWindow::changeCase(int cs)
 //! [11]
 void MainWindow::changeModel()
 {
-    delete completer;
-    completer = new QCompleter(this);
     completer->setMaxVisibleItems(maxVisibleSpinBox->value());
 
     switch (modelCombo->currentIndex()) {

@@ -1,1 +1,7 @@
 .*.swp
+.qmake.stash
+*.app
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+tmpfile*

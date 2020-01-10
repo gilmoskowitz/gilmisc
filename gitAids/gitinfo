@@ -1,0 +1,61 @@
+#!/bin/bash
+
+PROG=$(basename $0)
+VERBOSITY=0
+
+function usage() {
+cat <<EOUSAGE
+Display state of a git clone or collection of clones
+
+$PROG -h
+$PROG [ -v [ -v ... ] ] [ dir ... ]
+
+-h show this usage message
+-v show more detail (cumulative)
+
+If no directory is specified, the current directory is used. If the
+current directory contains a .git subdirectory, information is
+displayed about the current directory.  Otherwise, all immediate
+children (not recursive) are checked and information is displayed
+for each one that contains a .git subdirectory.
+
+EOUSAGE
+}
+
+function showInfo() {
+  local DIR=$1
+  local STARTDIR=$(pwd)
+
+  if [ -d $DIR/.git ] ; then
+    cd $DIR
+    if [ $DIR = . ] ; then
+      echo $(pwd) $(git describe --tags)
+    else
+      echo $DIR $(git describe --tags)
+    fi
+    [ $VERBOSITY -gt 0 ] && git rev-list --max-count=1 HEAD
+    [ $VERBOSITY -gt 1 ] && git status
+    [ $VERBOSITY -gt 2 ] && git stash list
+    cd $STARTDIR
+  fi
+}
+
+while getopts hv OPTION ; do
+  case $OPTION in
+    h) usage
+       exit 0
+       ;;
+    v) ((VERBOSITY++))
+       ;;
+  esac
+done
+
+shift $[$OPTIND - 1]
+
+if [ $# -eq 0 ] ; then
+  showInfo .
+else
+  for SUBDIR in $@ ; do
+    showInfo $SUBDIR
+  done
+fi
