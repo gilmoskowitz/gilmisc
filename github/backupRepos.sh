@@ -39,22 +39,22 @@ elif [ -z "$REPOLIST" ] ; then
 else
   DIRLIST=$(cut -f1 -d"	" $REPOLIST)
 fi
+DIRLIST="$(echo $DIRLIST | tr ' ' '\n' | sort)"
+DIRCNT=$(wc -w <<<$DIRLIST)
+COUNT=0
 
+cd $STARTDIR
 for DIR in $DIRLIST ; do
-  cd $STARTDIR
-  printf "%-*s\n" ${COLUMNS:-80} $DIR | sed -e "s/ /#/g" -e "s/#/ /"
+  echo -n $((++COUNT))
+  printf " of %-03s %s %s\n" $DIRCNT $DIR \
+         '######################################################################' |
+         cut -c -80
   if [ -d $DIR/.git ] ; then
-    cd $DIR
+    pushd $DIR
   elif [ -n "$REPOLIST" ] ; then
     git clone $(awk -v FS='	' '$1 == "'$DIR'" { print $3 }' $REPOLIST)
-    cd $DIR
+    pushd $DIR
   fi
-#  for FORK in $(curl -u ${GITHUBUSER}${PWSUFFIX} "https:://api.github.com/repos/xtuple/$DIR/forks" \
-#                | cut -f4 -d '"') ; do
-#    REMOTENAME=$(${FORK/\/*} | tr "[a-z]" "[A-Z]")
-#    if ! git remote show $REMOTENAME > /dev/null 2>&1 ; then
-#      git remote add $REMOTENAME "https://github.com/$FORK"
-#    fi
-#  done
   git fetch --all && git pull
+  popd
 done
