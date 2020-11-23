@@ -1,0 +1,5 @@
+query {
+    repository(owner: "xtuple", name: "xtuple") {
+      pullRequest(states: OPEN)
+    }
+}
