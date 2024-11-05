@@ -1,0 +1,90 @@
+#!/bin/bash
+PROG=`basename $0`
+SHOWNEWDEFAULT=0
+SHOWTYPEDEFAULT=0
+SHOWNEW=$SHOWNEWDEFAULT
+SHOWTYPE=$SHOWTYPEDEFAULT
+AWKSCRIPT='/^\?/ { print }
+	   /no file / { next }
+	   /^File: / && /Locally Modified/ { sub("File: ", "");
+	   				     if (SHOWTYPE)
+					       print "+ " DIR "/" $1;
+					     else
+					       print "  " DIR "/" $1;
+					     next
+					   }
+	   /^File: / && ! /Up-to-date/ { sub("File: ", "");
+					 if (SHOWTYPE)
+					   print "X " DIR "/" $0
+					 else
+					   print "  " DIR "/" $1;
+					 next
+				       }'
+usage() {
+  echo "usage:"
+  echo "$PROG -h"
+  echo "$PROG [ -a | -c ] [ -t ] [ file-or-directory-name [ ... ] ] "
+  echo
+  echo " -a	show CVS and new files"
+  echo " -c	show only CVS files"
+  if [ $SHOWNEWDEFAULT -ne 0 ] ; then
+    echo "default is -a"
+  else
+    echo "default is -c"
+  fi
+  echo " -t	show type (+ = modified, X = new or otherwise not up to date)"
+  if [ $SHOWTYPEDEFAULT -ne 0 ] ; then
+    echo "default is -t"
+  fi
+}
+
+ARGS=`getopt hact $*`
+if [ $? != 0 ] ; then
+  usage
+  exit 1
+fi
+set -- $ARGS
+
+while [ $1 != -- ] ; do
+  case "$1" in
+    -h)
+      usage
+      exit 0
+      ;;
+    -a)
+      SHOWNEW=1
+      ;;
+    -c)
+      SHOWNEW=0
+      ;;
+    -t)
+      SHOWTYPE=1
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+  shift
+done
+shift #past the --
+
+if [ $# -eq 0 ] ; then
+    set -- .
+fi
+
+if [ "$SHOWNEW" -eq 0 ] ; then
+  cvs status $@ | awk '/File:/ && ! /Up-to-date/'
+else
+  for arg in $@ ; do
+      if [ -d $arg ] ; then
+	  for dir in `find $@ -type d -print` ; do
+	      if [ ! `basename $dir` = CVS ] ; then
+		  cvs status -l $dir 2>/dev/null | awk -v DIR="$dir" -v SHOWTYPE=$SHOWTYPE "$AWKSCRIPT"
+	      fi
+	  done
+      else
+	  cvs status -l $arg 2>/dev/null | awk -v DIR="$dir" -v SHOWTYPE=$SHOWTYPE "$AWKSCRIPT"
+      fi
+  done
+fi
