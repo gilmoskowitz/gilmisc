@@ -1,0 +1,19 @@
+{
+  organization(login: "xtuple") {
+    membersWithRole(first: 100) {
+      nodes {
+        url
+        name
+        repositories(first: 100, isFork: true) {
+          nodes {
+            name
+            nameWithOwner
+            url
+          }
+        }
+      }
+    }
+  }
+}
+
+
