@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+#set -e
 
 PROG=$(basename $0)
 STARTDIR=$(pwd)
@@ -62,14 +62,15 @@ files.forEach(function (file) {
 });
 EOF
 
-REPOLIST=$(ls -d */.git | sed -e "s,/.git,," | sort -r)
+REPOLIST=$(ls -d */.git | sed -e "s,/.git,,")
 REPOCNT=$(wc -w <<<$REPOLIST)
 COUNT=0
+PROBLEMCHILDREN=
 
 cd $STARTDIR
 for REPO in $REPOLIST ; do
   echo -n $((COUNT++))
-  printf " of %-03s %s %s\n" $REPOCNT $REPO \
+  printf " of %-03s %s %s %s \n" $REPOCNT $REPO $(date +"%H:%M") \
          '######################################################################' |
          cut -c -80
   pushd $REPO > /dev/null 2>&1
@@ -77,6 +78,13 @@ for REPO in $REPOLIST ; do
   curl -u $GHUSER:$GHPASS -o $WORKDIR/forks_list.$REPO.$PAGE \
        "https://api.github.com/repos/xtuple/$REPO/forks?page=$PAGE&per_page=100"
   node $WORKDIR/forksToRemotes.js $WORKDIR/forks_list.$REPO.$PAGE | bash
-  git fetch --all
+  if ! git fetch --all ; then
+    PROBLEMCHILDREN="$PROBLEMCHILDREN;$REPO"
+  fi
   popd > /dev/null 2>&1
 done
+
+if [ -n "$PROBLEMCHILDREN" ] ; then
+  echo $PROG had problems fetching from the following:
+  tr ";" "\n" <<< $PROBLEMCHILDREN
+fi

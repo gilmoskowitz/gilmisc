@@ -1,12 +1,17 @@
+:set   expandtab
+:set   autoindent
+:set   autowrite
+:set   cindent
+:set   ignorecase
+:set   ruler
+:set nowrapscan
+
 :set shiftwidth=2
-:set expandtab
-:set autoindent
-:set autowrite
-:set cindent
-:set ignorecase
 :set guifont=Menlo\ Regular:h13
-:set ruler
 :syntax on
+
+:highlight ColorColumn ctermbg=lightgrey guibg=lightgrey
+:execute "set colorcolumn=" . join(range(81,100), ',')
 
 "get pathogen as a prerequisite to syntastic
 "$ mkdir ~/.vim/autoload ~/.vim/bundle
